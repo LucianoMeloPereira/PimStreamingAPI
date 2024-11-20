@@ -21,6 +21,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Injeção de dependência
 builder.Services.AddScoped(typeof(IRepositorioGenerico<>), typeof(RepositorioGenerico<>));
 builder.Services.AddScoped<IUsuarioServico, UsuarioServico>();
+builder.Services.AddScoped<IPlaylistServico, PlaylistServico>();
+builder.Services.AddScoped<IConteudoServico, ConteudoServico>();
+
 
 var app = builder.Build();
 
@@ -36,5 +39,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+app.UseStaticFiles();
+
 
 app.Run();

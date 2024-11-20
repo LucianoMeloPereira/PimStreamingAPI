@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using PimStreamingAPI.Dominio.DTO.PlayListDTO;
+using PimStreamingAPI.Dominio.Entidades;
 
 namespace PimStreamingAPI.Servico.Interfaces
 {
-    public interface IPlaylistServico
+    public interface IPlaylistServico : IBaseServico<Playlist>
     {
+        Task<IEnumerable<Playlist>> ObterPlaylistsPorUsuarioIdAsync(int usuarioId);
+        Task<PlaylistResponseDTO> CriarPlaylistAsync(PlaylistCreateDTO playlistDTO);
     }
 }

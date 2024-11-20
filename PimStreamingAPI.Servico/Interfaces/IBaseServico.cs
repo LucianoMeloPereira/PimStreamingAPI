@@ -1,14 +1,14 @@
 ﻿using System.Linq.Expressions;
 
-namespace PimStreamingAPI.Dado.Repositorios
+namespace PimStreamingAPI.Servico.Interfaces
 {
-    public interface IRepositorioGenerico<T> where T : class
+    public interface IBaseServico<T> where T : class
     {
         Task<IEnumerable<T>> ObterTodosAsync();
         Task<T> ObterPorIdAsync(int id);
-        Task<T> AdicionarAsync(T entity); // Agora retorna a entidade adicionada
+        Task<T> AdicionarAsync(T entity); // Alterado para retornar a entidade
         Task AtualizarAsync(T entity);
-        Task RemoverAsync(T entity);
+        Task RemoverAsync(int id);
         Task<IEnumerable<T>> ObterComFiltroAsync(Expression<Func<T, bool>> predicate);
     }
 }

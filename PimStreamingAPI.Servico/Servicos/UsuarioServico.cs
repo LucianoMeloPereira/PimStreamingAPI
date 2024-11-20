@@ -1,46 +1,22 @@
 ﻿using PimStreamingAPI.Dado.Repositorios;
 using PimStreamingAPI.Dominio.Entidades;
 using PimStreamingAPI.Servico.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PimStreamingAPI.Servico.Servicos
 {
-    public class UsuarioServico : IUsuarioServico
+    public class UsuarioServico : BaseServico<Usuario>, IUsuarioServico
     {
-        private readonly IRepositorioGenerico<Usuario> _repositorioUsuario;
+        private readonly IRepositorioGenerico<Usuario> _repositorio;
 
-        public UsuarioServico(IRepositorioGenerico<Usuario> repositorioUsuario)
+        public UsuarioServico(IRepositorioGenerico<Usuario> repositorio) : base(repositorio)
         {
-            _repositorioUsuario = repositorioUsuario;
+            _repositorio = repositorio;
         }
 
-        public async Task<List<Usuario>> ObterTodosUsuariosAsync()
+        public async Task<Usuario> ObterPorEmailAsync(string email)
         {
-            return await _repositorioUsuario.ObterTodosAsync();
-        }
-
-        public async Task<Usuario> ObterUsuarioPorIdAsync(int id)
-        {
-            return await _repositorioUsuario.ObterPorIdAsync(id);
-        }
-
-        public async Task AdicionarUsuarioAsync(Usuario usuario)
-        {
-            await _repositorioUsuario.AdicionarAsync(usuario);
-        }
-
-        public async Task AtualizarUsuarioAsync(Usuario usuario)
-        {
-            await _repositorioUsuario.AtualizarAsync(usuario);
-        }
-
-        public async Task DeletarUsuarioAsync(int id)
-        {
-            await _repositorioUsuario.DeletarAsync(id);
+            var usuarios = await _repositorio.ObterComFiltroAsync(u => u.Email == email);
+            return usuarios.FirstOrDefault();
         }
     }
 }

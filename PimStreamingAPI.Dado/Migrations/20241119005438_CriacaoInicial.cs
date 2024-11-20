@@ -15,6 +15,9 @@ namespace PimStreamingAPI.Dado.Migrations
                     ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Nome = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Sobrenome = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Idade = table.Column<int>(type: "int", nullable: false),
+                    Telefone = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Senha = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
@@ -51,8 +54,8 @@ namespace PimStreamingAPI.Dado.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Titulo = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Tipo = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CriadorID = table.Column<int>(type: "int", nullable: false),
-                    PlaylistID = table.Column<int>(type: "int", nullable: true)
+                    PlaylistID = table.Column<int>(type: "int", nullable: false),
+                    CriadorID = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -61,8 +64,20 @@ namespace PimStreamingAPI.Dado.Migrations
                         name: "FK_Conteudos_Playlists_PlaylistID",
                         column: x => x.PlaylistID,
                         principalTable: "Playlists",
-                        principalColumn: "ID");
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Conteudos_Usuarios_CriadorID",
+                        column: x => x.CriadorID,
+                        principalTable: "Usuarios",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Restrict);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Conteudos_CriadorID",
+                table: "Conteudos",
+                column: "CriadorID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Conteudos_PlaylistID",

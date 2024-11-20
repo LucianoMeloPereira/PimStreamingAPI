@@ -1,17 +1,11 @@
-﻿using System;
-
-namespace PimStreamingAPI.Dominio.Entidades
+﻿namespace PimStreamingAPI.DTO.ConteudoDTO
 {
-    public class Conteudo
+    public class ConteudoResponseDTO
     {
         public int ID { get; set; }
         public string Titulo { get; set; }
         public string Tipo { get; set; }
-
-        // Relacionamento
         public int? PlaylistID { get; set; }
-        public Playlist Playlist { get; set; }
         public int CriadorID { get; set; }
-        public Usuario Criador { get; set; }
     }
 }

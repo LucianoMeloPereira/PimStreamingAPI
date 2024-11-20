@@ -12,8 +12,8 @@ using PimStreamingAPI.Dado.Context;
 namespace PimStreamingAPI.Dado.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20241117000708_AjusteRelacionamentoConteudo")]
-    partial class AjusteRelacionamentoConteudo
+    [Migration("20241119005438_CriacaoInicial")]
+    partial class CriacaoInicial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -48,6 +48,8 @@ namespace PimStreamingAPI.Dado.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("ID");
+
+                    b.HasIndex("CriadorID");
 
                     b.HasIndex("PlaylistID");
 
@@ -88,11 +90,22 @@ namespace PimStreamingAPI.Dado.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("Idade")
+                        .HasColumnType("int");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Senha")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Sobrenome")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Telefone")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -103,11 +116,19 @@ namespace PimStreamingAPI.Dado.Migrations
 
             modelBuilder.Entity("PimStreamingAPI.Dominio.Entidades.Conteudo", b =>
                 {
+                    b.HasOne("PimStreamingAPI.Dominio.Entidades.Usuario", "Criador")
+                        .WithMany()
+                        .HasForeignKey("CriadorID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("PimStreamingAPI.Dominio.Entidades.Playlist", "Playlist")
                         .WithMany("Conteudos")
                         .HasForeignKey("PlaylistID")
-                        .OnDelete(DeleteBehavior.SetNull)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Criador");
 
                     b.Navigation("Playlist");
                 });

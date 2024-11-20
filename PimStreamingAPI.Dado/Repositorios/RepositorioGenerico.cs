@@ -1,49 +1,52 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 using PimStreamingAPI.Dado.Context;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PimStreamingAPI.Dado.Repositorios
 {
     public class RepositorioGenerico<T> : IRepositorioGenerico<T> where T : class
     {
-        private readonly AppDbContext _contexto;
+        private readonly AppDbContext _context;
+        private readonly DbSet<T> _dbSet;
 
-        public RepositorioGenerico(AppDbContext contexto)
+        public RepositorioGenerico(AppDbContext context)
         {
-            _contexto = contexto;
+            _context = context;
+            _dbSet = context.Set<T>();
         }
 
-        public async Task<List<T>> ObterTodosAsync()
+        public async Task<IEnumerable<T>> ObterTodosAsync()
         {
-            return await _contexto.Set<T>().ToListAsync();
+            return await _dbSet.ToListAsync();
         }
 
         public async Task<T> ObterPorIdAsync(int id)
         {
-            return await _contexto.Set<T>().FindAsync(id);
+            return await _dbSet.FindAsync(id);
         }
 
-        public async Task AdicionarAsync(T entidade)
+        public async Task<T> AdicionarAsync(T entity)
         {
-            await _contexto.Set<T>().AddAsync(entidade);
-            await _contexto.SaveChangesAsync();
+            await _dbSet.AddAsync(entity);
+            await _context.SaveChangesAsync(); // Garante que a entidade seja persistida no banco
+            return entity; // Retorna a entidade adicionada
         }
 
-        public async Task AtualizarAsync(T entidade)
+        public async Task AtualizarAsync(T entity)
         {
-            _contexto.Set<T>().Update(entidade);
-            await _contexto.SaveChangesAsync();
+            _dbSet.Update(entity);
+            await _context.SaveChangesAsync();
         }
 
-        public async Task DeletarAsync(int id)
+        public async Task RemoverAsync(T entity)
         {
-            var entidade = await ObterPorIdAsync(id);
-            _contexto.Set<T>().Remove(entidade);
-            await _contexto.SaveChangesAsync();
+            _dbSet.Remove(entity);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<T>> ObterComFiltroAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.Where(predicate).ToListAsync();
         }
     }
 }
