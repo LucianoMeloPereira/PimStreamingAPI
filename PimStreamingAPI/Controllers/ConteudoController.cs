@@ -2,6 +2,8 @@
 using PimStreamingAPI.DTO.ConteudoDTO;
 using PimStreamingAPI.Dominio.Entidades;
 using PimStreamingAPI.Servico.Interfaces;
+using PimStreamingAPI.Dominio.DTO.ConteudoDTO;
+using Microsoft.EntityFrameworkCore;
 
 namespace PimStreamingAPI.Controllers
 {
@@ -15,6 +17,65 @@ namespace PimStreamingAPI.Controllers
         {
             _conteudoServico = conteudoServico;
         }
+
+        [HttpPost("UploadVideo")]
+        public async Task<ActionResult<ConteudoResponseDTO>> UploadVideo([FromForm] ConteudoUploadDTO conteudoDTO)
+        {
+            var novoConteudo = new Conteudo
+            {
+                Titulo = conteudoDTO.Titulo,
+                Tipo = conteudoDTO.Tipo,
+                PlaylistID = conteudoDTO.PlaylistID,
+                CriadorID = conteudoDTO.CriadorID
+            };
+
+            var conteudoCriado = await _conteudoServico.UploadVideoAsync(novoConteudo, conteudoDTO.Arquivo);
+
+            var response = new ConteudoResponseDTO
+            {
+                ID = conteudoCriado.ID,
+                Titulo = conteudoCriado.Titulo,
+                Tipo = conteudoCriado.Tipo,
+                PlaylistID = conteudoCriado.PlaylistID,
+                CriadorID = conteudoCriado.CriadorID,
+                CaminhoArquivo = conteudoCriado.CaminhoArquivo
+            };
+
+            return CreatedAtAction(nameof(ObterConteudoPorId), new { id = response.ID }, response);
+        }
+
+        [HttpGet("DownloadVideo/{id}")]
+        public async Task<IActionResult> DownloadVideo(int id)
+        {
+            var conteudo = await _conteudoServico.ObterPorIdAsync(id);
+            if (conteudo == null || string.IsNullOrEmpty(conteudo.CaminhoArquivo))
+                return NotFound("Conteúdo ou arquivo não encontrado.");
+
+            var arquivoBytes = await System.IO.File.ReadAllBytesAsync(conteudo.CaminhoArquivo);
+            var tipoArquivo = "application/octet-stream"; // Ou use um tipo específico como "video/mp4"
+
+            return File(arquivoBytes, tipoArquivo, Path.GetFileName(conteudo.CaminhoArquivo));
+        }
+
+        [HttpGet("GetAllVideos")]
+    public async Task<ActionResult<IEnumerable<ConteudoResponseDTO>>> GetAllVideos()
+{
+    var conteudos = await _conteudoServico.ObterTodosAsync();
+
+    // Mapear os conteúdos para o DTO de resposta
+    var response = conteudos.Select(c => new ConteudoResponseDTO
+    {
+        ID = c.ID,
+        Titulo = c.Titulo,
+        Tipo = c.Tipo,
+        PlaylistID = c.PlaylistID,
+        CriadorID = c.CriadorID,
+        CaminhoArquivo = c.CaminhoArquivo
+    });
+
+    return Ok(response);
+}
+
 
         [HttpPost("CriarConteudo")]
         public async Task<ActionResult<ConteudoResponseDTO>> CriarConteudo([FromBody] ConteudoCreateDTO conteudoDTO)
@@ -93,6 +154,72 @@ namespace PimStreamingAPI.Controllers
             });
 
             return Ok(response);
+        }
+
+        [HttpGet("StreamVideo/{id}")]
+        public  async Task<ActionResult<IEnumerable<ConteudoResponseDTO>>> StreamVideo(int id)
+        {
+            var conteudo = await _conteudoServico.ObterPorIdAsync(id);
+
+            if (conteudo == null || string.IsNullOrEmpty(conteudo.CaminhoArquivo))
+            {
+                return NotFound("Conteúdo ou arquivo não encontrado.");
+            }
+
+            // Constrói o caminho absoluto do arquivo
+            var filePath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "Videos", // Pasta onde os vídeos estão armazenados
+                conteudo.CaminhoArquivo.Replace("/uploads/", "") // Ajusta o caminho relativo
+            );
+
+            // Verifica se o arquivo existe
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound("Arquivo não encontrado no servidor.");
+            }
+
+            var fileInfo = new FileInfo(filePath);
+            var totalLength = fileInfo.Length; // Tamanho total do arquivo em bytes
+
+            // Verifica se a requisição possui o cabeçalho "Range"
+            if (Request.Headers.ContainsKey("Range"))
+            {
+                var rangeHeader = Request.Headers["Range"].ToString();
+                var range = rangeHeader.Replace("bytes=", "").Split('-');
+
+                // Determina o início e fim do intervalo solicitado
+                var start = Convert.ToInt64(range[0]);
+                var end = range.Length > 1 && !string.IsNullOrEmpty(range[1])
+                    ? Convert.ToInt64(range[1])
+                    : totalLength - 1;
+
+                if (start >= totalLength || end >= totalLength)
+                {
+                    return BadRequest("Faixa inválida.");
+                }
+
+                var contentLength = end - start + 1;
+
+                // Prepara o stream para o intervalo solicitado
+                var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                fileStream.Seek(start, SeekOrigin.Begin);
+
+                // Configura os cabeçalhos de resposta
+                Response.StatusCode = 206; // Partial Content
+                Response.ContentLength = contentLength;
+                Response.Headers.Add("Content-Range", $"bytes {start}-{end}/{totalLength}");
+                Response.Headers.Add("Accept-Ranges", "bytes");
+
+                return File(fileStream, "video/mp4");
+            }
+
+            // Retorna o arquivo completo se nenhum Range for solicitado
+            var fullStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            Response.Headers.Add("Accept-Ranges", "bytes");
+            Response.ContentLength = totalLength;
+
+            return File(fullStream, "video/mp4");
         }
 
         [HttpPut("AtualizarConteudo/{id}")]
