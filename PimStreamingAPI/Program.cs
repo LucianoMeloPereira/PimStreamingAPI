@@ -21,6 +21,15 @@ builder.Services.AddScoped(typeof(IRepositorioGenerico<>), typeof(RepositorioGen
 builder.Services.AddScoped<IUsuarioServico, UsuarioServico>();
 builder.Services.AddScoped<IPlaylistServico, PlaylistServico>();
 builder.Services.AddScoped<IConteudoServico, ConteudoServico>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("PermitirTudo", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
@@ -42,7 +51,7 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/videos"
 });
 
-
+app.UseCors("PermitirTudo");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
