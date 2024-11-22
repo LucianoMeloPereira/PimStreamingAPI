@@ -57,24 +57,28 @@ namespace PimStreamingAPI.Controllers
             return File(arquivoBytes, tipoArquivo, Path.GetFileName(conteudo.CaminhoArquivo));
         }
 
-        [HttpGet("GetAllVideos")]
-    public async Task<ActionResult<IEnumerable<ConteudoResponseDTO>>> GetAllVideos()
-{
-    var conteudos = await _conteudoServico.ObterTodosAsync();
+        [HttpGet("StreamAllVideos")]
+        public async Task<ActionResult<IEnumerable<ConteudoResponseDTO>>> StreamAllVideos()
+        {
+            // Obtém todos os conteúdos do serviço  
+            var conteudos = await _conteudoServico.ObterTodosAsync();
 
-    // Mapear os conteúdos para o DTO de resposta
-    var response = conteudos.Select(c => new ConteudoResponseDTO
-    {
-        ID = c.ID,
-        Titulo = c.Titulo,
-        Tipo = c.Tipo,
-        PlaylistID = c.PlaylistID,
-        CriadorID = c.CriadorID,
-        CaminhoArquivo = c.CaminhoArquivo
-    });
+            if (conteudos == null || !conteudos.Any())
+                return NotFound("Nenhum vídeo encontrado.");
 
-    return Ok(response);
-}
+            // Mapear os conteúdos para incluir o URL do vídeo
+            var response = conteudos.Select(c => new ConteudoResponseDTO
+            {
+                ID = c.ID,
+                Titulo = c.Titulo,
+                Tipo = c.Tipo,
+                PlaylistID = c.PlaylistID,
+                CriadorID = c.CriadorID,
+                CaminhoArquivo = Url.Action("StreamVideo", "Conteudo", new { id = c.ID }, Request.Scheme) // Gera a URL para o StreamVideo
+            });
+
+            return Ok(response);
+        }
 
 
         [HttpPost("CriarConteudo")]
