@@ -18,6 +18,8 @@ namespace PimStreamingAPI.Controllers
             _conteudoServico = conteudoServico;
         }
 
+
+
         [HttpPost("UploadVideo")]
         public async Task<ActionResult<ConteudoResponseDTO>> UploadVideo([FromForm] ConteudoUploadDTO conteudoDTO)
         {

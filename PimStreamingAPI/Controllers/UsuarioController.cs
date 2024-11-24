@@ -2,6 +2,8 @@
 using PimStreamingAPI.Dominio.Entidades;
 using PimStreamingAPI.Servico.Interfaces;
 using PimStreamingAPI.Dominio.DTO.UsuarioDTO;
+using PimStreamingAPI.Servico.Servicos;
+using PimStreamingAPI.DTO;
 
 namespace PimStreamingAPI.Controllers
 {
@@ -10,17 +12,18 @@ namespace PimStreamingAPI.Controllers
     public class UsuarioController : ControllerBase
     {
         private readonly IUsuarioServico _usuarioServico;
+        private readonly JwtTokenService _jwtTokenService;
 
-        public UsuarioController(IUsuarioServico usuarioServico)
+        public UsuarioController(IUsuarioServico usuarioServico, JwtTokenService jwtTokenService)
         {
             _usuarioServico = usuarioServico;
+            _jwtTokenService = jwtTokenService;
         }
 
         // Endpoint para criar um novo usuário
         [HttpPost("CriarUsuario")]
         public async Task<ActionResult<UsuarioResponseDTO>> CriarUsuario([FromBody] UsuarioCreateDTO usuarioDTO)
         {
-            // Mapeia o DTO para a entidade de domínio
             var usuario = new Usuario
             {
                 Nome = usuarioDTO.Nome,
@@ -28,12 +31,11 @@ namespace PimStreamingAPI.Controllers
                 Idade = usuarioDTO.Idade,
                 Telefone = usuarioDTO.Telefone,
                 Email = usuarioDTO.Email,
-                Senha = usuarioDTO.Senha
+                Senha = usuarioDTO.Senha // Certifique-se de criptografar essa senha antes de salvar
             };
 
             await _usuarioServico.AdicionarAsync(usuario);
 
-            // Mapeia a entidade de domínio para o DTO de resposta
             var usuarioResponse = new UsuarioResponseDTO
             {
                 ID = usuario.ID,
@@ -53,7 +55,6 @@ namespace PimStreamingAPI.Controllers
         {
             var usuarios = await _usuarioServico.ObterTodosAsync();
 
-            // Converte a lista de entidades para a lista de DTOs
             var usuariosResponse = usuarios.Select(u => new UsuarioResponseDTO
             {
                 ID = u.ID,
@@ -76,7 +77,6 @@ namespace PimStreamingAPI.Controllers
             if (usuario == null)
                 return NotFound("Usuário não encontrado.");
 
-            // Converte a entidade para o DTO de resposta
             var usuarioResponse = new UsuarioResponseDTO
             {
                 ID = usuario.ID,
@@ -115,6 +115,31 @@ namespace PimStreamingAPI.Controllers
         {
             await _usuarioServico.RemoverAsync(id);
             return NoContent();
+        }
+
+        // Endpoint para login (autenticação JWT)
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login([FromBody] LoginDTO loginDTO)
+        {
+            // Autenticação: Verifica e-mail e senha no banco
+            var usuario = await _usuarioServico.ObterComFiltroAsync(u =>
+                u.Email == loginDTO.Email && u.Senha == loginDTO.Senha);
+
+            if (usuario == null || !usuario.Any())
+            {
+                return Unauthorized("E-mail ou senha inválidos.");
+            }
+
+            var user = usuario.First();
+
+            // Gera o token JWT
+            var token = _jwtTokenService.GenerateToken(userId: user.ID.ToString(), role: "Usuario");
+
+            return Ok(new
+            {
+                Token = token,
+                Message = "Login realizado com sucesso!"
+            });
         }
     }
 }
